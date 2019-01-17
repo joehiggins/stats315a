@@ -1,0 +1,61 @@
+---
+title: "Homework 1, STATS 315A"
+subtitle: "Stanford University, Winter 2019"
+author: "Joe Higgins"
+header-includes:
+   - \usepackage{amsmath}
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tufte)
+# invalidate cache when the tufte version changes
+knitr::opts_chunk$set(tidy = FALSE, cache.extra = packageVersion('tufte'))
+options(htmltools.dir.version = FALSE)
+# if you don't have a package, you can get it with "install.packages()"
+require('MASS')
+require('ggplot2')
+require('GGally')
+require('dplyr')
+require('reshape2')
+require('locfdr')
+require('mvtnorm')
+require('car')
+require('Boom')
+require('bestglm')
+require('BMS')
+t.test.p <- function(x,y) {
+  tst = t.test(x,y)
+  return(tst$p.value)
+}
+
+```
+
+
+## Question 1
+
+Perform a series of simulations with $p=10$ covariates and a range of values of $n=20,30,40,\ldots,100$. In each case, let $X$ be a random $n \times p$ matrix with iid standard normal entries. Set $\sigma^2=4$. For each value of $n$, repeat the following 500 times
+
+0. Put the first 3 entries of $\beta=1$ and put the remaining 7 equal to 0.
+
+Linear versus Knn: you are to run a simulation to compare KNN and linear regression in terms of their performance as a classifier, in the presence of an increasing number of noise variables. We will use a binary response variable Y taking values {0,1}, and initially X in R2. The joint distribution for (Y,X) is
+  (1−π)f0(x) ify=0; hYX(y,x)= πf1(x) ify=1 ,
+where f0(x) and f1(x) are each a mixture of K Gaussians:
+K
+fj(x) =  ωkjφ(x;μkj,Σkj), j = 0,1. (1)
+k=1
+φ(x;μ,Σ) is the density function for a bivariate Gaussian with mean vector μ and covariance matrix Σ, and the 0 < ωkj < 1 are the mixing proportions, with  k ωkj = 1.
+(a)Wewilluseπ=.5,K=6,ωkj =1/6andΣkj =σ2I= 0.2I, ∀k,j. The six location vectors in each class are simulated once and then fixed. Use a standard bivariate gaussian with co- variance I, and mean-vector (0,1) for class 0 and (1,0) for class 1 to generate the 12 location vectors.
+
+```{r}
+#initialize Beta
+p <- 10
+Beta <- matrix(0, 1, p)
+Beta[1:3] <- 1
+Beta = t(Beta)
+Beta
+
+names <- c("x1","x2","x3","x4","x5","x6","x7","x8","x9","x10")
+named_beta <- t(Beta)
+colnames(named_beta) <- names
+```

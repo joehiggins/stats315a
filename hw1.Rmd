@@ -68,14 +68,23 @@ location_vectors <- array(c(location_vectors_0, location_vectors_1), dim = c(K,n
 ks <- seq(1,K,1)
 js <- seq(0,J,1)
 
-mixture_of_Gaussians <- function(j, omega, x){
-  return(1)
+mixture_of_Gaussians <- function(j, centroid, omega, sigma2){
+  mixture_location <- c(0, 0)
+  for(k in ks){
+    mixture_location <- mixture_location + omega[k] * mvrnorm(1, mu = c(centroid[k,1,j+1], centroid[k,2,j+1]), Sigma = sqrt(sigma2)*diag(2))
+  }
+  return(mixture_location)
 }
 
-take_sample <- function(centroid, N, pi, omega, sigma2, ys){
-  X <- matrix()
-  for(y in ys){
-    #placeholder
+generate_sample <- function(centroid, N, pi, omega, sigma2, ys){
+  X <- matrix(NA, nrow=N, ncol=3)
+  for(i in 1:N){
+    y <- 0
+    if(runif(1, 0, 1) >= pi){
+      y <- 1
+    }
+    x <- mixture_of_Gaussians(y, centroid, omega, sigma2)
+    X[i,] <- c(y, x)
   }
   return(X)
 }
@@ -88,8 +97,12 @@ take_sample <- function(centroid, N, pi, omega, sigma2, ys){
 train_size <- 300
 test_size <- 20000
 
-y_train <- sample(c(1,0), train_size, TRUE)
-y_test <- sample(c(1,0), test_size, TRUE)
+X <- generate_sample(location_vectors, train_size, pi, omega, sigma2)
+y_train <- X[,1]
+x_train <- X[,2:3]
+X <- generate_sample(location_vectors, test_size, pi, omega, sigma2)
+y_test <- X[,1]
+x_test <- X[,2:3]
 ```
 
 

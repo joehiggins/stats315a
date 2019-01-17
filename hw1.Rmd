@@ -44,24 +44,89 @@ $\phi(x;\mu,\Sigma)$ is the density function for a bivariate Gaussian with mean 
 (a) We will use $\pi = .5$, $K=6$, $\omega_{kj} = \frac{1}{6}$ and $\Sigma_{kj} = \sigma^2I= 0.2 = I$, $\forall k,j$. The six location vectors in each class are simulated once and then fixed. Use a standard bivariate gaussian with covariance $I$, and mean-vector $(0,1)$ for class 0 and $(1,0)$ for class 1 to generate the 12 location vectors.
 
 ```{r}
-#initialize Beta
+#Set up sampling parameters and location vectors
 rm(list = ls())
 pi <- 0.5
 K <- 6
 J <- 1
+num_classes <- J+1
 omega <- matrix(1/6, nrow = K, ncol = J)
-Sigma <- 0.2 * diag(2)
+sigma2 <- 0.2
 
-location_vectors <- c()
+mu_0 <- c(0, 1)
+mu_1 <- c(1, 0)
+location_vectors_0 <- mvrnorm(K, mu = mu_0, Sigma = diag(2))
+location_vectors_1 <- mvrnorm(K, mu = mu_1, Sigma = diag(2))
 
+location_vectors <- array(c(location_vectors_0, location_vectors_1), dim = c(K,num_classes,num_classes))
+
+```
+
+(b) Write a function to generate a sample of $N$ points from a density as in (1), with the parameter settings as in 1(a). The function takes as inputs a centroid matrix, $N$, $pi$, $omega$ (vector) and $sigma2$ ($\sigma^2$), and outputs a matrix $X$.
+
+```{r}
 ks <- seq(1,K,1)
 js <- seq(0,J,1)
-for(k in ks){
-  for(j in js){
-    print(k)
-    print(j)
-  }
+
+mixture_of_Gaussians <- function(j, omega, x){
+  return(1)
 }
 
+take_sample <- function(centroid, N, pi, omega, sigma2, ys){
+  X <- matrix()
+  for(y in ys){
+    #placeholder
+  }
+  return(X)
+}
 
+```
+
+(c) Use your function to generate a training set of size 300 from $h_{YX}$ , as well as a test set of size 20K. This should leave you with `xtrain`, `ytrain`, `xtest` and `ytest`.
+
+```{r}
+train_size <- 300
+test_size <- 20000
+
+y_train <- sample(c(1,0), train_size, TRUE)
+y_test <- sample(c(1,0), test_size, TRUE)
+```
+
+
+## Question 3: Bootstrap
+Frequentist inference goes as follows. We have a random sample of $N$ observations from a population distribution $F$, and we compute some statistic of interest (lets assume a scalar). The sampling distribution of that statistic is what we would get if we were able to repeat the process a large number of times: drawing samples of size $N$ from $F$ and computing the statistic each time. From this we could compute a quantity of interest, such as the standard deviation (standard error), which gives us an idea of the precision of our statistic. Many of our favorite models have convenient assumptions which allow us to derive theoretical expressions for say, the standard error, which can then be computed for our one and only sample. Sometimes these calculations are intractable.
+
+The *bootstrap*, invented by our own Prof Brad Efron around 1980, is a cunning device for approximating the sampling distribution. Let $\hat{F}$ be the empirical distribution of our sample (the distribution that puts mass $1/N$ on each of the observed samples). We now draw a sample of size $N$ from $\hat{F}$. This amounts to drawing from the original $N$ observations a sample of size $N$ with replacement. We compute our statistic on this bootstrap sample. This process is repeated a large number $B$ times, and we use the bootstrap distribution of our statistic to approximate its sampling distribution.
+
+(a) Assume the model $y = f(x)+\epsilon$  with $x \sim U[0,1]$ and $\epsilon \sim N(0,(0.2)^2)$. For us $f(x) = 1 + x^2$. We have a sample of size 50 from this model. We fit a polynomial regression of degree 2 (we don’t know the true model, so we include a linear term as well as a quadratic term), and build a prediction function $f(x)$ from the fitted model. We are interested in estimating $x0 = \hat{f}^{-1}(1.3)$. (This kind of thing is done in dose-response experiments, and we are trying to estimate the dose that achieves a desired output). Write a function for taking a sample and delivering an estimate for $\hat{x}_0$.
+
+```{r}
+rm(list = ls())
+n <- 50
+X <- runif(n,0,1)
+X2 <- X^2
+y_noiseless <- sapply(X, function(x) {1+x^2})
+
+eps <- rnorm(n, 0, sqrt(0.2^2))
+y <- y_noiseless + eps
+
+model <- lm(y ~ X + X2)
+
+f_hat <- function(x, model){
+  features <- c(1, x, x^2)
+  y_hat <- features %*% model$coefficients
+  return(y_hat)
+}
+
+f_hat_inverse <- function(y, model){
+  a <- model$coefficients[3]
+  b <- model$coefficients[2]
+  c <- model$coefficients[1]
+  
+  x_hat <- (-b + sqrt(b^2 - 4*a*c)) / (2*a)
+  
+  return(x_hat)
+}
+f_hat(0.6, model)
+f_hat_inverse(1.3, model)
 ```

@@ -149,19 +149,29 @@ Frequentist inference goes as follows. We have a random sample of $N$ observatio
 
 The *bootstrap*, invented by our own Prof Brad Efron around 1980, is a cunning device for approximating the sampling distribution. Let $\hat{F}$ be the empirical distribution of our sample (the distribution that puts mass $1/N$ on each of the observed samples). We now draw a sample of size $N$ from $\hat{F}$. This amounts to drawing from the original $N$ observations a sample of size $N$ with replacement. We compute our statistic on this bootstrap sample. This process is repeated a large number $B$ times, and we use the bootstrap distribution of our statistic to approximate its sampling distribution.
 
-(a) Assume the model $y = f(x)+\epsilon$  with $x \sim U[0,1]$ and $\epsilon \sim N(0,(0.2)^2)$. For us $f(x) = 1 + x^2$. We have a sample of size 50 from this model. We fit a polynomial regression of degree 2 (we don’t know the true model, so we include a linear term as well as a quadratic term), and build a prediction function $f(x)$ from the fitted model. We are interested in estimating $x0 = \hat{f}^{-1}(1.3)$. (This kind of thing is done in dose-response experiments, and we are trying to estimate the dose that achieves a desired output). Write a function for taking a sample and delivering an estimate for $\hat{x}_0$.
+(a) Assume the model $y = f(x)+\epsilon$  with $x \sim U[0,1]$ and $\epsilon \sim N(0,(0.2)^2)$. For us $f(x) = 1 + x^2$. We have a sample of size 50 from this model. We fit a polynomial regression of degree 2 (we don’t know the true model, so we include a linear term as well as a quadratic term), and build a prediction function $f(x)$ from the fitted model. We are interested in estimating $x_0 = \hat{f}^{-1}(1.3)$. (This kind of thing is done in dose-response experiments, and we are trying to estimate the dose that achieves a desired output). Write a function for taking a sample and delivering an estimate for $\hat{x}_0$.
 
 ```{r}
 rm(list = ls())
-n <- 50
-X <- runif(n,0,1)
-X2 <- X^2
-y_noiseless <- 1+X2
+generate_model_from_pop <- function(n){
+  X <- runif(n,0,1)
+  X2 <- X^2
+  y_noiseless <- 1+X2
 
-eps <- rnorm(n, 0, sqrt(0.2^2))
-y <- y_noiseless + eps
+  eps <- rnorm(n, 0, sqrt(0.2^2))
+  y <- y_noiseless + eps
+  return(lm(y ~ X + X2))  
+}
 
-model <- lm(y ~ X + X2)
+generate_model_from_boostrap <- function(n, X){
+  X_bs <- sample(X, n, replace = TRUE)
+  X2 <- X_bs^2
+  y_noiseless <- 1+X2
+
+  eps <- rnorm(n, 0, sqrt(0.2^2))
+  y <- y_noiseless + eps
+  return(lm(y ~ X_bs + X2))
+}
 
 f_hat <- function(x, model){
   features <- c(1, x, x^2)
@@ -180,11 +190,10 @@ f_hat_inverse <- function(y, model){
   return(x_hat)
 }
 
-f_hat_inverse(1.3, model)
-f_hat(0.5635324, model)
+model <- generate_model_from_pop(50)
+x_hat_0 <- f_hat_inverse(1.3, model)
+x_hat_0
 
-1 + 0.5635324^2
-sqrt(0.3)
 
 ```
 
@@ -192,28 +201,46 @@ sqrt(0.3)
 (b) Generate a sample from this model, and compute $\hat{x}_0$ for this sample.
 
 ```{r}
-generate_sample <-function(){
-  x_0 <- runif(1, 0, 1)
-  e_0 <- rnorm(1, 0, sqrt(0.2^2))
-  y_0 <- f_hat(x_0, model) + e_0
-  print(x_0)
-  return(y_0)
-}
-y_0 <- generate_sample()
-x_hat_0 <- f_hat_inverse(y_0, model)
+model <- generate_model_from_pop(50)
+x_hat_0 <- f_hat_inverse(1.3, model)
 x_hat_0
 
 #generate sameple means create 50 x and y values
 #generate model is rerunning the linear model, we will generate 1000 lms with 50 datapoints each and loook at distribution of \hat{x}_0 over each of the 1000 realizations
 ```
 
+(c) Simulate a 1000 realizations from this model, to approximate the sampling distribution of $\hat{x}_0$.
+
+```{r}
+realizations <- 1000
+x_hat_0s_pop <- c()
+for(i in 1:realizations){
+  model <- generate_model_from_pop(50)
+  x_hat_0s_pop <- c(x_hat_0s_pop, f_hat_inverse(1.3, model))
+}
+
+hist(x_hat_0s_pop)
+```
+
+(d) Using just your original sample, compute the bootstrap distribution of $\hat{x}_0$.
+
+```{r}
+realizations <- 1000
+X <- runif(50,0,1)
+x_hat_0s_bs <- c()
+for(i in 1:realizations){
+  model <- generate_model_from_boostrap(50, X)
+  x_hat_0s_bs <- c(x_hat_0s_bs, f_hat_inverse(1.3, model))
+}
+
+hist(x_hat_0s_bs)
+```
 
 
+(e) Compare these two distributions, and in particular their standard deviations.
 
-
-
-
-
-
-
+```{r}
+sd(x_hat_0s_pop)
+sd(x_hat_0s_bs)
+```
 

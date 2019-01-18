@@ -70,19 +70,23 @@ js <- seq(0,J,1)
 
 mixture_of_Gaussians <- function(j, centroid, omega, sigma2){
   mixture_location <- c(0, 0)
+  #pick one of the centroids then sample from that.
   for(k in ks){
     mixture_location <- mixture_location + omega[k] * mvrnorm(1, mu = c(centroid[k,1,j+1], centroid[k,2,j+1]), Sigma = sqrt(sigma2)*diag(2))
   }
   return(mixture_location)
 }
 
-generate_sample <- function(centroid, N, pi, omega, sigma2, ys){
+generate_sample <- function(centroid, N, pi, omega, sigma2){
   X <- matrix(NA, nrow=N, ncol=3)
   for(i in 1:N){
+    ######
+    #change to binomial
     y <- 0
-    if(runif(1, 0, 1) >= pi){
+    if(runif(1, 0, 1) < pi){
       y <- 1
     }
+    ######
     x <- mixture_of_Gaussians(y, centroid, omega, sigma2)
     X[i,] <- c(y, x)
   }
@@ -105,6 +109,40 @@ y_test <- X[,1]
 x_test <- X[,2:3]
 ```
 
+(d) Write a function to compute the Bayes classifier for this setup. It should take as input the 12 × 2 matrix of means, sigma, and an input matrix X. Your function should classifiy all the rows of X.
+
+```{r}
+likelihood <- function(x, j, centroid, sigma2, pi){
+  l <- 0
+  for(k in ks){
+    l <- l + omega[k] * dmvnorm(x, mean = c(centroid[k,1,j+1], centroid[k,2,j+1]), sigma = sqrt(sigma2)*diag(2))
+  }
+  
+  return(l)
+}
+
+bayes_classification <- function(centroid, sigma2, pi, X){
+  y_hats <- c()
+  for(i in 1:nrow(X)){
+    x <- X[i,]
+    p_0 <- likelihood(x, 0, centroid, sigma2)*(1-pi)
+    p_1 <- likelihood(x, 1, centroid, sigma2)*(pi)
+    classification <- which.max(c(p_0, p_1)) - 1
+    y_hats <- c(y_hats, classification)
+  }
+  return(y_hats)
+}
+
+y_hat_bayes <- bayes_classification(location_vectors, sigma2, pi, x_train)
+
+get_accuracy <- function(y_hat, y){ 
+  correct <- y_hat_bayes == y_train
+  pct_correct = sum(correct)/length(correct)
+  return(pct_correct) 
+}
+
+get_accuracy(y_hat_bayes, y_train)
+```
 
 ## Question 3: Bootstrap
 Frequentist inference goes as follows. We have a random sample of $N$ observations from a population distribution $F$, and we compute some statistic of interest (lets assume a scalar). The sampling distribution of that statistic is what we would get if we were able to repeat the process a large number of times: drawing samples of size $N$ from $F$ and computing the statistic each time. From this we could compute a quantity of interest, such as the standard deviation (standard error), which gives us an idea of the precision of our statistic. Many of our favorite models have convenient assumptions which allow us to derive theoretical expressions for say, the standard error, which can then be computed for our one and only sample. Sometimes these calculations are intractable.
@@ -118,7 +156,7 @@ rm(list = ls())
 n <- 50
 X <- runif(n,0,1)
 X2 <- X^2
-y_noiseless <- sapply(X, function(x) {1+x^2})
+y_noiseless <- 1+X2
 
 eps <- rnorm(n, 0, sqrt(0.2^2))
 y <- y_noiseless + eps
@@ -143,8 +181,10 @@ f_hat_inverse <- function(y, model){
 }
 
 f_hat_inverse(1.3, model)
-f_hat(0.57, model)
+f_hat(0.5635324, model)
 
+1 + 0.5635324^2
+sqrt(0.3)
 
 ```
 
@@ -162,6 +202,9 @@ generate_sample <-function(){
 y_0 <- generate_sample()
 x_hat_0 <- f_hat_inverse(y_0, model)
 x_hat_0
+
+#generate sameple means create 50 x and y values
+#generate model is rerunning the linear model, we will generate 1000 lms with 50 datapoints each and loook at distribution of \hat{x}_0 over each of the 1000 realizations
 ```
 
 

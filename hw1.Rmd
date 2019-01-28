@@ -24,6 +24,7 @@ require('car')
 require('Boom')
 require('bestglm')
 require('BMS')
+require('class')
 t.test.p <- function(x,y) {
   tst = t.test(x,y)
   return(tst$p.value)
@@ -65,28 +66,17 @@ location_vectors <- array(c(location_vectors_0, location_vectors_1), dim = c(K,n
 (b) Write a function to generate a sample of $N$ points from a density as in (1), with the parameter settings as in 1(a). The function takes as inputs a centroid matrix, $N$, $pi$, $omega$ (vector) and $sigma2$ ($\sigma^2$), and outputs a matrix $X$.
 
 ```{r}
-ks <- seq(1,K,1)
-js <- seq(0,J,1)
 
 mixture_of_Gaussians <- function(j, centroid, omega, sigma2){
-  mixture_location <- c(0, 0)
-  #pick one of the centroids then sample from that.
-  for(k in ks){
-    mixture_location <- mixture_location + omega[k] * mvrnorm(1, mu = c(centroid[k,1,j+1], centroid[k,2,j+1]), Sigma = sqrt(sigma2)*diag(2))
-  }
-  return(mixture_location)
+  k <- sample((nrow(omega)), 1, prob=omega)
+  location <- mvrnorm(1, mu = c(centroid[k,1,j+1], centroid[k,2,j+1]), Sigma = sqrt(sigma2)*diag(2))
+  return(location)
 }
 
 generate_sample <- function(centroid, N, pi, omega, sigma2){
   X <- matrix(NA, nrow=N, ncol=3)
   for(i in 1:N){
-    ######
-    #change to binomial
-    y <- 0
-    if(runif(1, 0, 1) < pi){
-      y <- 1
-    }
-    ######
+    y <- rbinom(1, 1, pi)
     x <- mixture_of_Gaussians(y, centroid, omega, sigma2)
     X[i,] <- c(y, x)
   }
@@ -112,12 +102,11 @@ x_test <- X[,2:3]
 (d) Write a function to compute the Bayes classifier for this setup. It should take as input the 12 × 2 matrix of means, sigma, and an input matrix X. Your function should classifiy all the rows of X.
 
 ```{r}
-likelihood <- function(x, j, centroid, sigma2, pi){
+likelihood <- function(x, j, centroid, sigma2){
   l <- 0
-  for(k in ks){
+  for(k in seq(1,K,1)){
     l <- l + omega[k] * dmvnorm(x, mean = c(centroid[k,1,j+1], centroid[k,2,j+1]), sigma = sqrt(sigma2)*diag(2))
   }
-  
   return(l)
 }
 
@@ -133,15 +122,103 @@ bayes_classification <- function(centroid, sigma2, pi, X){
   return(y_hats)
 }
 
-y_hat_bayes <- bayes_classification(location_vectors, sigma2, pi, x_train)
-
 get_accuracy <- function(y_hat, y){ 
-  correct <- y_hat_bayes == y_train
+  correct <- y_hat == y
   pct_correct = sum(correct)/length(correct)
   return(pct_correct) 
 }
 
+y_hat_bayes <- bayes_classification(location_vectors, sigma2, pi, x_train)
 get_accuracy(y_hat_bayes, y_train)
+
+```
+
+(e) Write an evaluation function that takes as input your training and test data. In addition it should take as input a vector of values for $k$, the KNN neighborhood size parameter. Your function should
+i. Estimate the Bayes error using the test data.
+ii. Estimate the test error of a linear classifier fit by least squares.
+iii. Estimate the test errors for KNN at each of the values of k (the R package class has a knn() function). 
+Run your function using k = 1, 3, 5, 7, 9, 11, 13, 15.
+
+```{r}
+evaluation <- function(y_train, x_train, y_test, x_test, ks){
+  
+  train <- data.frame(cbind(y_train,x_train))
+  test <- data.frame(cbind(y_test,x_test))
+  
+  #Bayesian Error
+  y_hat_bayes <- bayes_classification(location_vectors, sigma2, pi, x_test)
+  bayes_error <- 1 - get_accuracy(y_hat_bayes, y_test)
+  cat("Bayes error: ",bayes_error,"\n")
+  
+  #Linear Classifier Error
+  
+  linear_classifier <- glm(y_train ~ ., data = train, family = "binomial")
+  y_hat_linear_p <- predict(linear_classifier, test, type = "response")
+  y_hat_linear <- y_hat_linear_p
+  y_hat_linear[y_hat_linear_p < .50] <- 0
+  y_hat_linear[y_hat_linear_p >= .50] <- 1 
+  linear_error <- 1 - get_accuracy(y_hat_linear, y_test)
+  cat("Linear classifier error: ",linear_error,"\n")
+
+  #KNN Error
+  for(k in ks){
+    y_hat_knn <- knn(x_train, x_test, y_train, k = k, prob = FALSE)
+    knn_error <- 1 - get_accuracy(y_hat_knn, y_test)
+    cat("KNN",k, " classifier error: ",knn_error,"\n")
+  }
+}
+
+ks <- c(1, 3, 5, 7, 9, 11, 13, 15)
+evaluation(y_train, x_train, y_test, x_test, ks)
+```
+
+(f) Modify your function in the previous step to take two extra parameters: the number noise of noise variables, and sigma.noise. The idea is to add additional Gaussian noise columns to xtrain and xtest. Once again your function should produce the list of errors as before.
+
+```{r}
+evaluation <- function(y_train, x_train, y_test, x_test, ks, num_noise_vars, sigma.noise){
+
+  #Bayesian Error
+  y_hat_bayes <- bayes_classification(location_vectors, sigma2, pi, x_test)
+  bayes_error <- 1 - get_accuracy(y_hat_bayes, y_test)
+  cat("Bayes error: ",bayes_error,"\n")
+
+  #Add noise
+  noise_train <- matrix( rnorm(train_size*num_noise_vars,mean=0,sd=sigma.noise), train_size, num_noise_vars)
+  noise_test <- matrix( rnorm(test_size*num_noise_vars,mean=0,sd=sigma.noise), test_size, num_noise_vars)
+  
+  x_train <- cbind(x_train, noise_train)
+  x_test <- cbind(x_test, noise_test)
+  
+  train <- data.frame(cbind(y_train,x_train))
+  test <- data.frame(cbind(y_test,x_test))
+  
+  #Linear Classifier Error
+  linear_classifier <- glm(y_train ~ ., data = train, family = "binomial")
+  y_hat_linear_p <- predict(linear_classifier, test, type = "response")
+  y_hat_linear <- y_hat_linear_p
+  y_hat_linear[y_hat_linear_p < .50] <- 0
+  y_hat_linear[y_hat_linear_p >= .50] <- 1 
+  linear_error <- 1 - get_accuracy(y_hat_linear, y_test)
+  cat("Linear classifier error: ",linear_error,"\n")
+
+  #KNN Error
+  for(k in ks){
+    y_hat_knn <- knn(x_train, x_test, y_train, k = k, prob = FALSE)
+    knn_error <- 1 - get_accuracy(y_hat_knn, y_test)
+    cat("KNN",k, " classifier error: ",knn_error,"\n")
+  }
+}
+```
+
+(g) Run your function with 1,2,...,10 noise variables, with `sigma.noise=1`. Summarize what you have learned.
+
+Summary: Both methods decrease accuracy with additional noise variables, but linear is more robust than KNN to additional noise variables.
+```{r}
+num_noise_vars <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+for(n in num_noise_vars){
+  cat(n,"noise variables\n")
+  evaluation(y_train, x_train, y_test, x_test, ks, n, 1) 
+}
 ```
 
 ## Question 3: Bootstrap
@@ -203,10 +280,7 @@ x_hat_0
 ```{r}
 model <- generate_model_from_pop(50)
 x_hat_0 <- f_hat_inverse(1.3, model)
-x_hat_0
-
-#generate sameple means create 50 x and y values
-#generate model is rerunning the linear model, we will generate 1000 lms with 50 datapoints each and loook at distribution of \hat{x}_0 over each of the 1000 realizations
+cat("Sample value: ", x_hat_0)
 ```
 
 (c) Simulate a 1000 realizations from this model, to approximate the sampling distribution of $\hat{x}_0$.
@@ -225,7 +299,6 @@ hist(x_hat_0s_pop)
 (d) Using just your original sample, compute the bootstrap distribution of $\hat{x}_0$.
 
 ```{r}
-realizations <- 1000
 X <- runif(50,0,1)
 x_hat_0s_bs <- c()
 for(i in 1:realizations){
@@ -240,7 +313,7 @@ hist(x_hat_0s_bs)
 (e) Compare these two distributions, and in particular their standard deviations.
 
 ```{r}
-sd(x_hat_0s_pop)
-sd(x_hat_0s_bs)
+cat("STD resampling from population: ", sd(x_hat_0s_pop))
+cat("STD resampling from bootstrap: ", sd(x_hat_0s_bs))
 ```
 

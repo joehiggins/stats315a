@@ -151,7 +151,6 @@ evaluation <- function(y_train, x_train, y_test, x_test, ks){
   cat("Bayes error: ",bayes_error,"\n")
   
   #Linear Classifier Error
-  
   linear_classifier <- glm(y_train ~ ., data = train, family = "binomial")
   y_hat_linear_p <- predict(linear_classifier, test, type = "response")
   y_hat_linear <- y_hat_linear_p
@@ -219,6 +218,91 @@ for(n in num_noise_vars){
   cat(n,"noise variables\n")
   evaluation(y_train, x_train, y_test, x_test, ks, n, 1) 
 }
+```
+
+## Question 2: Curse of Dimensionality
+
+(c) Suppose we have 1000 training examples $x_i$ generated uniformly inside the unit cube in $p$ dimensions. The true relation between
+$X$ and $Y$ is $Y = e^{-8||X||^{2}_{*}}$
+where, $||X||_*$ is the 2-norm of the first $floor(p/2)$ entries of the vector $X$.
+ 
+We use the 1-nearest neighbour rule to predict $y_0$ at the test-point $x_0 = 0$. Plot the MSE, squared-bias and variance as a function of $p$, for $p = 1,...,20$. (See Fig. 2.7 from ESL). Use at least 100 simulations if you are estimating the above quantities empirically. Explain the behavior of the variance as $p$ increases?
+
+```{r}
+rm(list = ls())
+num_reps <- 100
+n <- 1000
+ps <- seq(1,20,1)
+
+E_y_hat_0s <- c()
+MSEs <- c()
+Biases <- c()
+Variances <- c()
+for(p in ps){
+  
+  half <- floor(p/2)
+  f_x0 <- exp(-8 * norm(rep(0,p)[1:half], type="2"))
+  y_hat_0s <- c()
+  
+  for(rep in 1:num_reps){
+    X <- matrix( runif(n*p), n, p)
+    Y <- apply(X, 1, function(x) exp(-8 * norm(x[1:half], type="2")))
+    y_hat_0_lvl <- knn(X, rep(0,p), Y, k=1, prob = FALSE)
+    
+    y_hat_0 <- as.numeric(levels(y_hat_0_lvl))[y_hat_0_lvl]
+    y_hat_0s <- c(y_hat_0s, y_hat_0)
+  }
+  MSE <- sum((f_x0 - y_hat_0s)^2)/num_reps
+  E_y_hat_0 <- sum(y_hat_0s)/num_reps
+  Var_T <- sum((y_hat_0s - E_y_hat_0)^2)/num_reps
+  Bias_sq <- (E_y_hat_0 - f_x0)^2
+  
+  E_y_hat_0s <- c(E_y_hat_0s, E_y_hat_0)
+  MSEs <- c(MSEs, MSE)
+  Biases <- c(Biases, Bias_sq)
+  Variances <- c(Variances, Var_T)
+}
+
+plot(MSEs)
+plot(Biases)
+plot(Variances)
+```
+
+(d) Repeat part (c) with $Y = e^{f(X)}$, where $f(X)$ is the sum of the first $floor(p/2)$ entries of the vector $X$.
+
+```{r}
+E_y_hat_0s <- c()
+MSEs <- c()
+Biases <- c()
+Variances <- c()
+for(p in ps){
+  
+  half <- floor(p/2)
+  f_x0 <- exp(sum(rep(0,p)[1:half]))
+  y_hat_0s <- c()
+  
+  for(rep in 1:num_reps){
+    X <- matrix( runif(n*p), n, p)
+    Y <- apply(X, 1, function(x) exp(sum(x[1:half])))
+    y_hat_0_lvl <- knn(X, rep(0,p), Y, k=1, prob = FALSE)
+    
+    y_hat_0 <- as.numeric(levels(y_hat_0_lvl))[y_hat_0_lvl]
+    y_hat_0s <- c(y_hat_0s, y_hat_0)
+  }
+  MSE <- sum((f_x0 - y_hat_0s)^2)/num_reps
+  E_y_hat_0 <- sum(y_hat_0s)/num_reps
+  Var_T <- sum((y_hat_0s - E_y_hat_0)^2)/num_reps
+  Bias_sq <- (E_y_hat_0 - f_x0)^2
+  
+  E_y_hat_0s <- c(E_y_hat_0s, E_y_hat_0)
+  MSEs <- c(MSEs, MSE)
+  Biases <- c(Biases, Bias_sq)
+  Variances <- c(Variances, Var_T)
+}
+
+plot(MSEs)
+plot(Biases)
+plot(Variances)
 ```
 
 ## Question 3: Bootstrap
@@ -317,3 +401,11 @@ cat("STD resampling from population: ", sd(x_hat_0s_pop))
 cat("STD resampling from bootstrap: ", sd(x_hat_0s_bs))
 ```
 
+
+## Question 4 
+
+(b) Consider a special instance of this model with $X \in R^1$, and let $X \sim U[-0.5,1.5]$, and $f(x) = x + 3x^2 - 1.5x^3$. Take $N = 15$, and run $B = 10$ simulations from the model. Produce a figure showing the true function $f$, and superimpose the 10 lines for $X E (\hat{\beta}|X)$.
+
+```{r}
+rm(list = ls())
+```

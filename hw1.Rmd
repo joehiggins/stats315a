@@ -59,9 +59,14 @@ mu_1 <- c(1, 0)
 location_vectors_0 <- mvrnorm(K, mu = mu_0, Sigma = diag(2))
 location_vectors_1 <- mvrnorm(K, mu = mu_1, Sigma = diag(2))
 
-location_vectors <- array(c(location_vectors_0, location_vectors_1), dim = c(K,num_classes,num_classes))
+location_vectors <- array(
+  c(location_vectors_0, location_vectors_1),
+  dim = c(K,num_classes,num_classes)
+)
 
 ```
+
+\pagebreak
 
 (b) Write a function to generate a sample of $N$ points from a density as in (1), with the parameter settings as in 1(a). The function takes as inputs a centroid matrix, $N$, $pi$, $omega$ (vector) and $sigma2$ ($\sigma^2$), and outputs a matrix $X$.
 
@@ -69,7 +74,11 @@ location_vectors <- array(c(location_vectors_0, location_vectors_1), dim = c(K,n
 
 mixture_of_Gaussians <- function(j, centroid, omega, sigma2){
   k <- sample((nrow(omega)), 1, prob=omega)
-  location <- mvrnorm(1, mu = c(centroid[k,1,j+1], centroid[k,2,j+1]), Sigma = sqrt(sigma2)*diag(2))
+  location <- mvrnorm(
+    1, 
+    mu = c(centroid[k,1,j+1], centroid[k,2,j+1]), 
+    Sigma = sqrt(sigma2)*diag(2)
+  )
   return(location)
 }
 
@@ -85,6 +94,8 @@ generate_sample <- function(centroid, N, pi, omega, sigma2){
 
 ```
 
+\pagebreak
+
 (c) Use your function to generate a training set of size 300 from $h_{YX}$ , as well as a test set of size 20K. This should leave you with `xtrain`, `ytrain`, `xtest` and `ytest`.
 
 ```{r}
@@ -99,13 +110,18 @@ y_test <- X[,1]
 x_test <- X[,2:3]
 ```
 
+\pagebreak
+
 (d) Write a function to compute the Bayes classifier for this setup. It should take as input the 12 × 2 matrix of means, sigma, and an input matrix X. Your function should classifiy all the rows of X.
 
 ```{r}
 likelihood <- function(x, j, centroid, sigma2){
   l <- 0
   for(k in seq(1,K,1)){
-    l <- l + omega[k] * dmvnorm(x, mean = c(centroid[k,1,j+1], centroid[k,2,j+1]), sigma = sqrt(sigma2)*diag(2))
+    l <- l + omega[k] * dmvnorm(x, 
+                                mean = c(centroid[k,1,j+1], centroid[k,2,j+1]),
+                                sigma = sqrt(sigma2)*diag(2)
+                              )
   }
   return(l)
 }
@@ -132,6 +148,8 @@ y_hat_bayes <- bayes_classification(location_vectors, sigma2, pi, x_train)
 get_accuracy(y_hat_bayes, y_train)
 
 ```
+
+\pagebreak
 
 (e) Write an evaluation function that takes as input your training and test data. In addition it should take as input a vector of values for $k$, the KNN neighborhood size parameter. Your function should
 i. Estimate the Bayes error using the test data.
@@ -171,6 +189,8 @@ ks <- c(1, 3, 5, 7, 9, 11, 13, 15)
 evaluation(y_train, x_train, y_test, x_test, ks)
 ```
 
+\pagebreak
+
 (f) Modify your function in the previous step to take two extra parameters: the number noise of noise variables, and sigma.noise. The idea is to add additional Gaussian noise columns to xtrain and xtest. Once again your function should produce the list of errors as before.
 
 ```{r}
@@ -182,8 +202,14 @@ evaluation <- function(y_train, x_train, y_test, x_test, ks, num_noise_vars, sig
   cat("Bayes error: ",bayes_error,"\n")
 
   #Add noise
-  noise_train <- matrix( rnorm(train_size*num_noise_vars,mean=0,sd=sigma.noise), train_size, num_noise_vars)
-  noise_test <- matrix( rnorm(test_size*num_noise_vars,mean=0,sd=sigma.noise), test_size, num_noise_vars)
+  noise_train <- matrix(
+    rnorm(train_size*num_noise_vars,mean=0,sd=sigma.noise), 
+    train_size, num_noise_vars
+  )
+  noise_test <- matrix(
+    rnorm(test_size*num_noise_vars,mean=0,sd=sigma.noise), 
+    test_size, num_noise_vars
+  )
   
   x_train <- cbind(x_train, noise_train)
   x_test <- cbind(x_test, noise_test)
@@ -209,6 +235,8 @@ evaluation <- function(y_train, x_train, y_test, x_test, ks, num_noise_vars, sig
 }
 ```
 
+\pagebreak
+
 (g) Run your function with 1,2,...,10 noise variables, with `sigma.noise=1`. Summarize what you have learned.
 
 Summary: Both methods decrease accuracy with additional noise variables, but linear is more robust than KNN to additional noise variables.
@@ -219,6 +247,8 @@ for(n in num_noise_vars){
   evaluation(y_train, x_train, y_test, x_test, ks, n, 1) 
 }
 ```
+
+\pagebreak
 
 ## Question 2: Curse of Dimensionality
 
@@ -268,6 +298,8 @@ plot(Biases)
 plot(Variances)
 ```
 
+\pagebreak
+
 (d) Repeat part (c) with $Y = e^{f(X)}$, where $f(X)$ is the sum of the first $floor(p/2)$ entries of the vector $X$.
 
 ```{r}
@@ -304,6 +336,8 @@ plot(MSEs)
 plot(Biases)
 plot(Variances)
 ```
+
+\pagebreak
 
 ## Question 3: Bootstrap
 Frequentist inference goes as follows. We have a random sample of $N$ observations from a population distribution $F$, and we compute some statistic of interest (lets assume a scalar). The sampling distribution of that statistic is what we would get if we were able to repeat the process a large number of times: drawing samples of size $N$ from $F$ and computing the statistic each time. From this we could compute a quantity of interest, such as the standard deviation (standard error), which gives us an idea of the precision of our statistic. Many of our favorite models have convenient assumptions which allow us to derive theoretical expressions for say, the standard error, which can then be computed for our one and only sample. Sometimes these calculations are intractable.
@@ -358,6 +392,7 @@ x_hat_0
 
 ```
 
+\pagebreak
 
 (b) Generate a sample from this model, and compute $\hat{x}_0$ for this sample.
 
@@ -366,6 +401,8 @@ model <- generate_model_from_pop(50)
 x_hat_0 <- f_hat_inverse(1.3, model)
 cat("Sample value: ", x_hat_0)
 ```
+
+\pagebreak
 
 (c) Simulate a 1000 realizations from this model, to approximate the sampling distribution of $\hat{x}_0$.
 
@@ -380,6 +417,8 @@ for(i in 1:realizations){
 hist(x_hat_0s_pop)
 ```
 
+\pagebreak
+
 (d) Using just your original sample, compute the bootstrap distribution of $\hat{x}_0$.
 
 ```{r}
@@ -393,6 +432,7 @@ for(i in 1:realizations){
 hist(x_hat_0s_bs)
 ```
 
+\pagebreak
 
 (e) Compare these two distributions, and in particular their standard deviations.
 
@@ -401,6 +441,7 @@ cat("STD resampling from population: ", sd(x_hat_0s_pop))
 cat("STD resampling from bootstrap: ", sd(x_hat_0s_bs))
 ```
 
+\pagebreak
 
 ## Question 4 
 

@@ -408,4 +408,33 @@ cat("STD resampling from bootstrap: ", sd(x_hat_0s_bs))
 
 ```{r}
 rm(list = ls())
+x_min <- -0.5
+x_max <-  1.5
+linspace <- seq(x_min, x_max, 0.1)
+
+xform <- function(x){
+  return(x + 3*x^2 - 1.5*x^3)
+}
+
+truth <- xform(linspace)
+
+plot(linspace, truth)
+
+N <- 15
+B <- 10
+
+for(i in 1:B){
+  X <- runif(N, x_min, x_max)
+  Y <- xform(X)
+  
+  model <- lm(Y~X)
+  intcp <- as.numeric(model$coefficients[1])
+  slope <- as.numeric(model$coefficients[2])
+  lines(linspace,intcp + slope*linspace, col="blue")
+}
+
+legend("topleft", legend = c("truth","simulation"), fill = c("black","blue"))
+
+
+
 ```

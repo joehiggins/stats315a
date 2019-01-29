@@ -245,7 +245,7 @@ for(p in ps){
   y_hat_0s <- c()
   
   for(rep in 1:num_reps){
-    X <- matrix( runif(n*p), n, p)
+    X <- matrix( runif(n*p, -0.5, 0.5), n, p)
     Y <- apply(X, 1, function(x) exp(-8 * norm(x[1:half], type="2")))
     y_hat_0_lvl <- knn(X, rep(0,p), Y, k=1, prob = FALSE)
     

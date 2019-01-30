@@ -1,13 +1,13 @@
 ---
 title: "Homework 1, STATS 315A"
 subtitle: "Stanford University, Winter 2019"
-author: "Joe Higgins"
+author: "Joe Higgins, Jessica Wetstone"
 header-includes:
    - \usepackage{amsmath}
 output: pdf_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include = FALSE}
 library(tufte)
 # invalidate cache when the tufte version changes
 knitr::opts_chunk$set(tidy = FALSE, cache.extra = packageVersion('tufte'))
@@ -42,7 +42,7 @@ where $f_0(x)$ and $f_1(x)$ are each a mixture of K Gaussians:
 $f_j(x) = \sum_{k=1}^{K} \omega_{kj}\phi(x;\mu_{kj},\Sigma_{kj}), j = 0,1$ (1)
 $\phi(x;\mu,\Sigma)$ is the density function for a bivariate Gaussian with mean vector $\mu$ and covariance matrix $\Sigma$, and the $0 < \omega_{kj} < 1$ are the mixing proportions, with  $\sum_k \omega_{kj} = 1$.
 
-(a) We will use $\pi = .5$, $K=6$, $\omega_{kj} = \frac{1}{6}$ and $\Sigma_{kj} = \sigma^2I= 0.2 = I$, $\forall k,j$. The six location vectors in each class are simulated once and then fixed. Use a standard bivariate gaussian with covariance $I$, and mean-vector $(0,1)$ for class 0 and $(1,0)$ for class 1 to generate the 12 location vectors.
+(a) We will use $\pi = .5$, $K=6$, $\omega_{kj} = \frac{1}{6}$ and $\Sigma_{kj} = \sigma^2I= 0.2I$, $\forall k,j$. The six location vectors in each class are simulated once and then fixed. Use a standard bivariate gaussian with covariance $I$, and mean-vector $(0,1)$ for class 0 and $(1,0)$ for class 1 to generate the 12 location vectors.
 
 ```{r}
 #Set up sampling parameters and location vectors
@@ -77,7 +77,7 @@ mixture_of_Gaussians <- function(j, centroid, omega, sigma2){
   location <- mvrnorm(
     1, 
     mu = c(centroid[k,1,j+1], centroid[k,2,j+1]), 
-    Sigma = sqrt(sigma2)*diag(2)
+    Sigma = sigma2*diag(2)
   )
   return(location)
 }
@@ -120,7 +120,7 @@ likelihood <- function(x, j, centroid, sigma2){
   for(k in seq(1,K,1)){
     l <- l + omega[k] * dmvnorm(x, 
                                 mean = c(centroid[k,1,j+1], centroid[k,2,j+1]),
-                                sigma = sqrt(sigma2)*diag(2)
+                                sigma = sigma2*diag(2)
                               )
   }
   return(l)
@@ -157,7 +157,7 @@ ii. Estimate the test error of a linear classifier fit by least squares.
 iii. Estimate the test errors for KNN at each of the values of k (the R package class has a knn() function). 
 Run your function using k = 1, 3, 5, 7, 9, 11, 13, 15.
 
-```{r}
+```{r, eval = TRUE}
 evaluation <- function(y_train, x_train, y_test, x_test, ks){
   
   train <- data.frame(cbind(y_train,x_train))
@@ -169,7 +169,7 @@ evaluation <- function(y_train, x_train, y_test, x_test, ks){
   cat("Bayes error: ",bayes_error,"\n")
   
   #Linear Classifier Error
-  linear_classifier <- glm(y_train ~ ., data = train, family = "binomial")
+  linear_classifier <- glm(y_train ~ ., data = train, family = "gaussian")
   y_hat_linear_p <- predict(linear_classifier, test, type = "response")
   y_hat_linear <- y_hat_linear_p
   y_hat_linear[y_hat_linear_p < .50] <- 0
@@ -193,7 +193,7 @@ evaluation(y_train, x_train, y_test, x_test, ks)
 
 (f) Modify your function in the previous step to take two extra parameters: the number noise of noise variables, and sigma.noise. The idea is to add additional Gaussian noise columns to xtrain and xtest. Once again your function should produce the list of errors as before.
 
-```{r}
+```{r, eval = TRUE}
 evaluation <- function(y_train, x_train, y_test, x_test, ks, num_noise_vars, sigma.noise){
 
   #Bayesian Error
@@ -218,7 +218,7 @@ evaluation <- function(y_train, x_train, y_test, x_test, ks, num_noise_vars, sig
   test <- data.frame(cbind(y_test,x_test))
   
   #Linear Classifier Error
-  linear_classifier <- glm(y_train ~ ., data = train, family = "binomial")
+  linear_classifier <- glm(y_train ~ ., data = train, family = "gaussian")
   y_hat_linear_p <- predict(linear_classifier, test, type = "response")
   y_hat_linear <- y_hat_linear_p
   y_hat_linear[y_hat_linear_p < .50] <- 0
@@ -258,7 +258,9 @@ where, $||X||_*$ is the 2-norm of the first $floor(p/2)$ entries of the vector $
  
 We use the 1-nearest neighbour rule to predict $y_0$ at the test-point $x_0 = 0$. Plot the MSE, squared-bias and variance as a function of $p$, for $p = 1,...,20$. (See Fig. 2.7 from ESL). Use at least 100 simulations if you are estimating the above quantities empirically. Explain the behavior of the variance as $p$ increases?
 
-```{r}
+The MSE becomes driven by Bias and not Variance as $p$ increases. This is because the estimate becomes closer and closer to 0 while the true value is 1. As $p$ increases, Variance goes to 0 since the estimates for each replication concentrate more and more about 0.
+
+```{r, eval = TRUE}
 rm(list = ls())
 num_reps <- 100
 n <- 1000
@@ -302,7 +304,9 @@ plot(Variances)
 
 (d) Repeat part (c) with $Y = e^{f(X)}$, where $f(X)$ is the sum of the first $floor(p/2)$ entries of the vector $X$.
 
-```{r}
+The MSE is now dominated more by Variance than Bias in this example. As $p$ increases, the estimates become less and less concentrated about the same value.
+
+```{r, eval = TRUE}
 E_y_hat_0s <- c()
 MSEs <- c()
 Biases <- c()
@@ -314,7 +318,7 @@ for(p in ps){
   y_hat_0s <- c()
   
   for(rep in 1:num_reps){
-    X <- matrix( runif(n*p), n, p)
+    X <- matrix( runif(n*p, -0.5, 0.5), n, p)
     Y <- apply(X, 1, function(x) exp(sum(x[1:half])))
     y_hat_0_lvl <- knn(X, rep(0,p), Y, k=1, prob = FALSE)
     
@@ -436,9 +440,13 @@ hist(x_hat_0s_bs)
 
 (e) Compare these two distributions, and in particular their standard deviations.
 
-```{r}
-cat("STD resampling from population: ", sd(x_hat_0s_pop))
-cat("STD resampling from bootstrap: ", sd(x_hat_0s_bs))
+The means are the same, but the standard deviation from the bootstrap is slightly larger than from the population.
+
+```{r results="hold"}
+cat("Mean resampling from population: ", mean(x_hat_0s_pop),"\n")
+cat("Mean resampling from bootstrap: ", mean(x_hat_0s_bs),"\n")
+cat("STD resampling from population: ", sd(x_hat_0s_pop),"\n")
+cat("STD resampling from bootstrap: ", sd(x_hat_0s_bs),"\n")
 ```
 
 \pagebreak

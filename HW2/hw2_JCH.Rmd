@@ -1,0 +1,36 @@
+---
+title: "Homework 2, STATS 315A"
+subtitle: "Stanford University, Winter 2019"
+author: "Joe Higgins"
+header-includes:
+   - \usepackage{amsmath}
+output: pdf_document
+---
+
+```{r setup, include = FALSE}
+library(tufte)
+# invalidate cache when the tufte version changes
+knitr::opts_chunk$set(tidy = FALSE, cache.extra = packageVersion('tufte'))
+options(htmltools.dir.version = FALSE)
+# if you don't have a package, you can get it with "install.packages()"
+require('MASS')
+require('ggplot2')
+require('GGally')
+require('dplyr')
+require('reshape2')
+require('locfdr')
+require('mvtnorm')
+require('car')
+require('Boom')
+require('bestglm')
+require('BMS')
+require('class')
+t.test.p <- function(x,y) {
+  tst = t.test(x,y)
+  return(tst$p.value)
+}
+
+```
+
+
+## Question 1

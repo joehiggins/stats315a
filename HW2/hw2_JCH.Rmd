@@ -58,18 +58,30 @@ iii. In ii., what is the optimization problem being solved?
 ```{r}
 rm(list = ls())
 
-train <- read.table("zip.train")
-test <- read.table("zip.test")
-#hi <- readr::read_table('zip.train', col_names = FALSE)
-
-y_train <- train[,1]
-x_train <- matrix(, nrow=dim(train)[1], ncol=dim(train)[2]-1)
-for(i in 2:ncol(train)){
-  x_train[,i-1] <- train[,i]
+read_data_as_matrix <- function(file_string){
+  table <- read.table(file_string)
+  output <- matrix(, nrow=dim(table)[1], ncol=dim(table)[2])
+  for(i in 1:ncol(table)){
+    output[,i] <- table[,i]
+  }
+  return(output)
 }
 
-model <- ?glmnet(x_train, y_train, family=c("gaussian"), alpha = 0.3)
+train <- read_data_as_matrix("zip.train")
+y_train <- train[,1]
+x_train <- train[,2:dim(train)[2]]
+test <- read_data_as_matrix("zip.test")
+y_test <- test[,1]
+x_test <- test[,2:dim(test)[2]]
 
+linear_regression_model <- glmnet(x_train, y_train, family=c("gaussian"), alpha = 0.3)
+stuff <- predict.glmnet(linear_regression_model, x_test, type=c("response"))
+
+multinomial_regression_model <- glmnet(x_train, y_train, family=c("multinomial"), alpha = 0.3)
+stuff <- predict(multinomial_regression_model, x_test, type=c("response"))
+
+lda_model <- lda(y_train ~ ., data=data.frame(x_train), na.action="na.omit", CV=FALSE)
+stuff <- predict(lda_model, data.frame(x_test))
 
 
 ```

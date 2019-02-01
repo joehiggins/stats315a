@@ -25,6 +25,7 @@ require('Boom')
 require('bestglm')
 require('BMS')
 require('class')
+require('glmnet')
 t.test.p <- function(x,y) {
   tst = t.test(x,y)
   return(tst$p.value)
@@ -33,4 +34,35 @@ t.test.p <- function(x,y) {
 ```
 
 
-## Question 1
+## Question 2
+
+This question will have you write an R function to efficiently perform forward stepwise linear regression. It requires that you understand the material on pages 13–15 of the chapter 3 lecture notes. The setup is linear regression with an $N×p$ matrix $X$ and a response vector $y$. You always include an intercept in your models, which is not included in $X$.
+
+(a) Let $\tilde{X}$ be the matrix $X$ with each of the columns mean centered. What is the fitted intercept in the regression of $y$ on $\tilde{X}$ ? How do the coefficients of $X$ in the regression of $y$ on $X$ compare with the coefficients of $\tilde{X}$?
+
+```{r}
+#stuff goes here
+```
+
+## Question 7
+
+7. Obtain the zipcode train and test data from the ESL website.
+
+i. Compare the test performance of a) linear regression b) linear discriminant analysis and c) multiclass linear logistic regression.
+
+ii. For a) and c), use the package glmnet (available in R, matlab and python) to run elastic-net regularized versions of each (use $\alpha$ = 0.3). For these two, plot the test error as a functions of the training R2 for a) and D2 for c) (% training deviance explained).
+
+iii. In ii., what is the optimization problem being solved?
+
+```{r}
+
+train <- read.table("zip.train")
+test <- read.table("zip.test")
+
+y_train <- train[,1]
+x_train <- train[,2:dim(train)[2]]
+y_test <- test[,1]
+x_test <- test[,2:dim(test)[2]]
+
+
+```

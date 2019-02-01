@@ -67,6 +67,12 @@ read_data_as_matrix <- function(file_string){
   return(output)
 }
 
+get_accuracy <- function(y_hat, y){
+  correct <- y_hat == y
+  pct_correct <- sum(correct)/length(correct)
+  return(pct_correct)
+}
+
 train <- read_data_as_matrix("zip.train")
 y_train <- train[,1]
 x_train <- train[,2:dim(train)[2]]
@@ -74,14 +80,19 @@ test <- read_data_as_matrix("zip.test")
 y_test <- test[,1]
 x_test <- test[,2:dim(test)[2]]
 
-linear_regression_model <- glmnet(x_train, y_train, family=c("gaussian"), alpha = 0.3)
-stuff <- predict.glmnet(linear_regression_model, x_test, type=c("response"))
-
-multinomial_regression_model <- glmnet(x_train, y_train, family=c("multinomial"), alpha = 0.3)
-stuff <- predict(multinomial_regression_model, x_test, type=c("response"))
-
+linear_regression_model <- cv.glmnet(x_train, y_train, family=c("gaussian"), alpha = 0.3, nfolds = 10)
+multinomial_regression_model <- cv.glmnet(x_train, y_train, family=c("multinomial"), alpha = 0.3, nfolds = 10)
 lda_model <- lda(y_train ~ ., data=data.frame(x_train), na.action="na.omit", CV=FALSE)
-stuff <- predict(lda_model, data.frame(x_test))
 
+linear_regression_output <- predict(linear_regression_model, x_test, type=c("response"))
+linear_regression_prdct <- round(linear_regression_output)
+linear_regression_prdct[linear_regression_prdct == -1] <- 0
+multinomial_regression_output <- predict(multinomial_regression_model, x_test, type=c("response"))
+multinomial_regression_prdct <- apply(multinomial_regression_output, 1, function(x) which.max(x) - 1)
+lda_output <- predict(lda_model, data.frame(x_test))
+lda_prdct <- lda_output$class
 
+linear_regression_accuracy <- get_accuracy(linear_regression_prdct, y_test)
+multinomial_regression_accuracy <- get_accuracy(multinomial_regression_prdct, y_test)
+lda_accuracy <- get_accuracy(lda_prdct, y_test)
 ```

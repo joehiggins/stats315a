@@ -26,6 +26,7 @@ require('bestglm')
 require('BMS')
 require('class')
 require('glmnet')
+require('readr')
 t.test.p <- function(x,y) {
   tst = t.test(x,y)
   return(tst$p.value)
@@ -55,14 +56,20 @@ ii. For a) and c), use the package glmnet (available in R, matlab and python) to
 iii. In ii., what is the optimization problem being solved?
 
 ```{r}
+rm(list = ls())
 
 train <- read.table("zip.train")
 test <- read.table("zip.test")
+#hi <- readr::read_table('zip.train', col_names = FALSE)
 
 y_train <- train[,1]
-x_train <- train[,2:dim(train)[2]]
-y_test <- test[,1]
-x_test <- test[,2:dim(test)[2]]
+x_train <- matrix(, nrow=dim(train)[1], ncol=dim(train)[2]-1)
+for(i in 2:ncol(train)){
+  x_train[,i-1] <- train[,i]
+}
+
+model <- ?glmnet(x_train, y_train, family=c("gaussian"), alpha = 0.3)
+
 
 
 ```

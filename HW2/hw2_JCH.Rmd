@@ -81,8 +81,8 @@ y_test <- test[,1]
 x_test <- test[,2:dim(test)[2]]
 
 linear_regression_model <- glmnet(x_train, y_train, family=c("gaussian"), alpha = 0.3)
-lda_model <- lda(y_train ~ ., data=data.frame(x_train), na.action="na.omit", CV=FALSE)
 multinomial_regression_model <- glmnet(x_train, y_train, family=c("multinomial"), alpha = 0.3)
+lda_model <- lda(y_train ~ ., data=data.frame(x_train), na.action="na.omit", CV=FALSE)
 
 linear_regression_output <- predict(linear_regression_model, x_test, type=c("response"))
 linear_regression_prdct <- round(linear_regression_output)
@@ -101,7 +101,12 @@ linear_regression_errors <- apply(linear_regression_prdct, 2, function(x) 1 - ge
 multinomial_regression_errors <- apply(multinomial_regression_prdct, 2, function(x) 1 - get_accuracy(x, y_test))
 lda_accuracy <- get_accuracy(lda_prdct, y_test)
 
-#is dev ratio the R^2 for linear regression?
+#how to go from dev ratio to R^2 for linear regression?
+#https://stats.stackexchange.com/questions/46345/how-to-calculate-goodness-of-fit-in-glm-r/46358#46358
+#or from documentation: 
+# dev.ratio The fraction of (null) deviance explained (for "elnet", this is the R-square).
+#The deviance calculations incorporate weights if present in the model. The deviance is defined to be 2*(loglike_sat - loglike), where loglike_sat is the loglikelihood for the saturated model (a model with a free parameter per observation). Hence dev.ratio=1-dev/nulldev.
+
 #what is the optimization being done...
 plot(linear_regression_model$dev.ratio, linear_regression_errors)
 plot(multinomial_regression_model$dev.ratio, multinomial_regression_errors)

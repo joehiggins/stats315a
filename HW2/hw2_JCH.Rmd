@@ -80,13 +80,29 @@ test <- read_data_as_matrix("zip.test")
 y_test <- test[,1]
 x_test <- test[,2:dim(test)[2]]
 
-linear_regression_model <- glmnet(x_train, y_train, family=c("gaussian"), alpha = 0.3)
+to_one_hot_matrix <- function(vector){
+  K <- 10
+  one_hot_matrix <- c()
+  for(i in 1:length(vector)){
+    class <- vector[i]
+    new_row <- rep(0,K)
+    new_row[class+1] <- 1
+    one_hot_matrix <- rbind(one_hot_matrix, new_row)
+  }
+  return(one_hot_matrix)
+}
+y_train_1hot <- to_one_hot_matrix(y_train)
+
+linear_regression_model <- glmnet(x_train, y_train_1hot, family=c("mgaussian"), alpha = 0.3)
 multinomial_regression_model <- glmnet(x_train, y_train, family=c("multinomial"), alpha = 0.3)
 lda_model <- lda(y_train ~ ., data=data.frame(x_train), na.action="na.omit", CV=FALSE)
 
 linear_regression_output <- predict(linear_regression_model, x_test, type=c("response"))
-linear_regression_prdct <- round(linear_regression_output)
-linear_regression_prdct[linear_regression_prdct == -1] <- 0
+linear_regression_prdct <- apply(
+  linear_regression_output, 3, function (x) apply(
+    x, 1, function(y) which.max(y) - 1
+  )
+)
 multinomial_regression_output <- predict(multinomial_regression_model, x_test, type=c("response"))
 multinomial_regression_prdct <- apply(
   multinomial_regression_output, 3, function (x) apply(
@@ -96,21 +112,12 @@ multinomial_regression_prdct <- apply(
 lda_output <- predict(lda_model, data.frame(x_test))
 lda_prdct <- lda_output$class
 
-
 linear_regression_errors <- apply(linear_regression_prdct, 2, function(x) 1 - get_accuracy(x, y_test))
 multinomial_regression_errors <- apply(multinomial_regression_prdct, 2, function(x) 1 - get_accuracy(x, y_test))
 lda_accuracy <- get_accuracy(lda_prdct, y_test)
 
-#how to go from dev ratio to R^2 for linear regression?
-#https://stats.stackexchange.com/questions/46345/how-to-calculate-goodness-of-fit-in-glm-r/46358#46358
-#or from documentation: 
-# dev.ratio The fraction of (null) deviance explained (for "elnet", this is the R-square).
-#The deviance calculations incorporate weights if present in the model. The deviance is defined to be 2*(loglike_sat - loglike), where loglike_sat is the loglikelihood for the saturated model (a model with a free parameter per observation). Hence dev.ratio=1-dev/nulldev.
-
-#what is the optimization being done...
 plot(linear_regression_model$dev.ratio, linear_regression_errors)
 plot(multinomial_regression_model$dev.ratio, multinomial_regression_errors)
 
-
-
+#elastic net is an optimzation problem- take it from the book
 ```

@@ -1,7 +1,7 @@
 ---
 title: "Homework 2, STATS 315A"
 subtitle: "Stanford University, Winter 2019"
-author: "Joe Higgins"
+author: "Joe Higgins, Jess Wetstone, Remmelt Ammerlaan"
 header-includes:
    - \usepackage{amsmath}
 output: pdf_document
@@ -35,27 +35,13 @@ t.test.p <- function(x,y) {
 ```
 
 
-## Question 2
-
-This question will have you write an R function to efficiently perform forward stepwise linear regression. It requires that you understand the material on pages 13–15 of the chapter 3 lecture notes. The setup is linear regression with an $N×p$ matrix $X$ and a response vector $y$. You always include an intercept in your models, which is not included in $X$.
-
-(a) Let $\tilde{X}$ be the matrix $X$ with each of the columns mean centered. What is the fitted intercept in the regression of $y$ on $\tilde{X}$ ? How do the coefficients of $X$ in the regression of $y$ on $X$ compare with the coefficients of $\tilde{X}$?
-
-```{r}
-#stuff goes here
-```
-
 ## Question 7
 
 7. Obtain the zipcode train and test data from the ESL website.
 
 i. Compare the test performance of a) linear regression b) linear discriminant analysis and c) multiclass linear logistic regression.
 
-ii. For a) and c), use the package glmnet (available in R, matlab and python) to run elastic-net regularized versions of each (use $\alpha$ = 0.3). For these two, plot the test error as a functions of the training R2 for a) and D2 for c) (% training deviance explained).
-
-iii. In ii., what is the optimization problem being solved?
-
-```{r}
+```{r results = "hold"}
 rm(list = ls())
 
 read_data_as_matrix <- function(file_string){
@@ -73,6 +59,7 @@ get_accuracy <- function(y_hat, y){
   return(pct_correct)
 }
 
+#import data
 train <- read_data_as_matrix("zip.train")
 y_train <- train[,1]
 x_train <- train[,2:dim(train)[2]]
@@ -80,6 +67,7 @@ test <- read_data_as_matrix("zip.test")
 y_test <- test[,1]
 x_test <- test[,2:dim(test)[2]]
 
+#encode y_train as one hot matrix
 to_one_hot_matrix <- function(vector){
   K <- 10
   one_hot_matrix <- c()
@@ -93,17 +81,33 @@ to_one_hot_matrix <- function(vector){
 }
 y_train_1hot <- to_one_hot_matrix(y_train)
 
-linear_regression_model <- glmnet(x_train, y_train_1hot, family=c("mgaussian"), alpha = 0.3)
-multinomial_regression_model <- glmnet(x_train, y_train, family=c("multinomial"), alpha = 0.3)
-lda_model <- lda(y_train ~ ., data=data.frame(x_train), na.action="na.omit", CV=FALSE)
 
-linear_regression_output <- predict(linear_regression_model, x_test, type=c("response"))
+#train models
+linear_regression_model <- glmnet(
+  x_train, y_train_1hot, 
+  family=c("mgaussian"), alpha = 0.3
+)
+multinomial_regression_model <- glmnet(
+  x_train, y_train, 
+  family=c("multinomial"), alpha = 0.3
+)
+lda_model <- lda(
+  y_train ~ ., data=data.frame(x_train),
+  na.action="na.omit", CV=FALSE
+)
+
+#create predictions
+linear_regression_output <- predict(
+  linear_regression_model, x_test, type=c("response")
+)
 linear_regression_prdct <- apply(
   linear_regression_output, 3, function (x) apply(
     x, 1, function(y) which.max(y) - 1
   )
 )
-multinomial_regression_output <- predict(multinomial_regression_model, x_test, type=c("response"))
+multinomial_regression_output <- predict(
+  multinomial_regression_model, x_test, type=c("response")
+)
 multinomial_regression_prdct <- apply(
   multinomial_regression_output, 3, function (x) apply(
     x, 1, function(y) which.max(y) - 1
@@ -112,12 +116,40 @@ multinomial_regression_prdct <- apply(
 lda_output <- predict(lda_model, data.frame(x_test))
 lda_prdct <- lda_output$class
 
-linear_regression_errors <- apply(linear_regression_prdct, 2, function(x) 1 - get_accuracy(x, y_test))
-multinomial_regression_errors <- apply(multinomial_regression_prdct, 2, function(x) 1 - get_accuracy(x, y_test))
-lda_accuracy <- get_accuracy(lda_prdct, y_test)
+#get errors
+linear_regression_errors <- apply(
+  linear_regression_prdct, 2, 
+  function(x) 1 - get_accuracy(x, y_test)
+)
+multinomial_regression_errors <- apply(
+  multinomial_regression_prdct, 2, 
+  function(x) 1 - get_accuracy(x, y_test)
+)
+lda_error <- 1 - get_accuracy(lda_prdct, y_test)
 
+#report errors
+cat("Test performance:\n")
+cat(
+  "Linear Regression, min error over Lambda:", 
+  min(linear_regression_errors), "\n"
+)
+cat(
+  "Linear Discriminant Analysis error:", 
+  lda_error, "\n"
+)
+cat(
+  "Multinomial Regression, min error over Lambda:", 
+  min(multinomial_regression_errors), "\n"
+)
+```
+
+ii. For a) and c), use the package `glmnet` (available in R, matlab and python) to run elastic-net regularized versions of each (use $\alpha$ = 0.3). For these two, plot the test error as a functions of the training $R^2$ for a) and $D^2$ for c) (% training deviance explained).
+
+```{r}
 plot(linear_regression_model$dev.ratio, linear_regression_errors)
 plot(multinomial_regression_model$dev.ratio, multinomial_regression_errors)
-
-#elastic net is an optimzation problem- take it from the book
 ```
+
+iii. In ii., what is the optimization problem being solved?
+
+$\min_{\beta} || \mathbf{y - X}\beta ||_{2}^{2} + \lambda [\alpha|| \beta ||_{2}^{2} + (1-\alpha)|| \beta ||_{1} ]$

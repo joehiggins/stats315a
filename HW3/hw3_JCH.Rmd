@@ -58,9 +58,7 @@ b1_t <-   t_splines[,] %*% model$coefficients[-1][1*df+1:df]
 b2_t <-   t_splines[,] %*% model$coefficients[-1][2*df+1:df]
 
 y_hat <- bint_t + (b1_t * data$x.1) + (b2_t * data$x.2)
-#why don't they match?
-#model$residuals - y_hat
-#y_hat - model$residuals
+#y_hat - model$fitted.values
 RSS <- (1/nrow(data)) * sum((data$y - y_hat)^2)
 
 coeff_t <- matrix(c(bint_t, b1_t, b2_t), nrow=nrow(data),ncol=(3))
@@ -71,12 +69,15 @@ matplot(data$t, coeff_t)
 (c) Compute the pointwise standard errors for each of these, and in- clude a standard-error band (upper and lower) for each function.
 
 ```{r}
-str(model)
+std_errs <- summary(model)$coefficients[,2]
+bint_se <- sum(std_errs[(0*df+1):(df+1)])
+b1_se <-   sum(std_errs[1*df+2:(df+1)])
+b2_se <-   sum(std_errs[2*df+2:(df+1)])
 ```
 
 (d) Is this an interaction model? If so, what order.
 
-Yes this is an interaction model. It is a second order interaction model, since the covariates of the model are based on two vectors multiplied element-wise on each other.
+Yes this is an interaction model. It is a second-order interaction model, since the covariates of the model are based on two vectors multiplied element-wise on each other.
 
 
 ## Question 6

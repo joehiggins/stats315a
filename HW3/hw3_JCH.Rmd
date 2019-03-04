@@ -60,10 +60,22 @@ b2_t <-   t_splines[,] %*% model$coefficients[-1][2*df+1:df]
 y_hat <- bint_t + (b1_t * data$x.1) + (b2_t * data$x.2)
 #y_hat - model$fitted.values
 RSS <- (1/nrow(data)) * sum((data$y - y_hat)^2)
+summary(model)
 
 coeff_t <- matrix(c(bint_t, b1_t, b2_t), nrow=nrow(data),ncol=(3))
        
-matplot(data$t, coeff_t)
+matplot(
+  data$t, coeff_t,
+  type = "l",
+  lty = c('solid','solid','solid'),
+  col = c('black', 'red', 'green')
+)
+legend(
+  'right', 
+  legend = c('B_0','B_x1','B_x2'), 
+  col = c('black', 'red', 'green'), 
+  fill = c('black', 'red', 'green')
+)
 ```
 
 (c) Compute the pointwise standard errors for each of these, and in- clude a standard-error band (upper and lower) for each function.
@@ -73,6 +85,19 @@ std_errs <- summary(model)$coefficients[,2]
 bint_se <- sum(std_errs[(0*df+1):(df+1)])
 b1_se <-   sum(std_errs[1*df+2:(df+1)])
 b2_se <-   sum(std_errs[2*df+2:(df+1)])
+
+coeff_se_t <- matrix(c(
+  bint_t, bint_t + bint_se, bint_t - bint_se,
+  b1_t,   b1_t + b1_se,     b1_t - b1_se,
+  b2_t,   b2_t + b2_se,     b2_t - b2_se), 
+  nrow=nrow(data),ncol=(9)
+)
+matplot(
+  data$t, coeff_se_t,
+  type = "l",
+  lty = c('solid','dashed','dashed','solid','dashed','dashed','solid','dashed','dashed'),
+  col = c('black','black','black','red','red','red','green','green','green')
+)
 ```
 
 (d) Is this an interaction model? If so, what order.

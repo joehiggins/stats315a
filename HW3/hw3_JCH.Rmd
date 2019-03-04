@@ -47,24 +47,36 @@ You have a set of $p$ variables in the matrix $X$ which represent some economic 
 ```{r}
 rm(list = ls())
 data <- read.csv("vcdata.csv")
-df <- 4
+df <- 5
 
 t_splines <- ns(data$t, df = df)
 int <- rep(1, nrow(data))
 model <- lm(data$y ~ t_splines:(int + data$x.1 + data$x.2))
-summary(model)
 
 bint_t <- t_splines[,] %*% model$coefficients[-1][0*df+1:df] + model$coefficients['(Intercept)']
 b1_t <-   t_splines[,] %*% model$coefficients[-1][1*df+1:df]
 b2_t <-   t_splines[,] %*% model$coefficients[-1][2*df+1:df]
 
 y_hat <- bint_t + (b1_t * data$x.1) + (b2_t * data$x.2)
+#why don't they match?
+#model$residuals - y_hat
+#y_hat - model$residuals
 RSS <- (1/nrow(data)) * sum((data$y - y_hat)^2)
 
 coeff_t <- matrix(c(bint_t, b1_t, b2_t), nrow=nrow(data),ncol=(3))
        
 matplot(data$t, coeff_t)
 ```
+
+(c) Compute the pointwise standard errors for each of these, and in- clude a standard-error band (upper and lower) for each function.
+
+```{r}
+str(model)
+```
+
+(d) Is this an interaction model? If so, what order.
+
+Yes this is an interaction model. It is a second order interaction model, since the covariates of the model are based on two vectors multiplied element-wise on each other.
 
 
 ## Question 6

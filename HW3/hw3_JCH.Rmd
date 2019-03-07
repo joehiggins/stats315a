@@ -29,10 +29,43 @@ require('glmnet')
 require('readr')
 require('caret')
 require('spline')
+require('e1071')
+
 t.test.p <- function(x,y) {
   tst = t.test(x,y)
   return(tst$p.value)
 }
+
+```
+
+## Question 1
+
+Ex. 18.9 Compare the data piling direction of Exercise 18.8 to the direction of the optimal separating hyperplane (Section 4.5.2) qualitatively. Which makes the widest margin, and why? Use a small simulation to demonstrate the difference.
+
+```{r}
+rm(list = ls())
+
+#Parameters
+p <- 12
+n <- 10
+
+#Create covariates
+X <- matrix(mvrnorm(p*n, 0, 1), nrow=n, ncol=p)
+s <- svd(X)
+U <- s$u
+D <- diag(s$d)
+V <- s$v
+
+#Create response
+y <- matrix(rbinom(n, 1, .5))
+y[y == 0] <- -1
+
+#Create maximal data piling direction
+B_0 <- V %*% ginv(D) %*% t(U) %*% y
+
+#Maximal data piling direction
+DP_margin <- 
+
 
 ```
 

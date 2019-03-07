@@ -48,24 +48,47 @@ rm(list = ls())
 #Parameters
 p <- 12
 n <- 10
+reps <- 100
 
-#Create covariates
-X <- matrix(mvrnorm(p*n, 0, 1), nrow=n, ncol=p)
-s <- svd(X)
-U <- s$u
-D <- diag(s$d)
-V <- s$v
+margins <- matrix(,nrow=reps,ncol=2)
+for(i in 1:reps){
+  #Create covariates
+  X <- matrix(mvrnorm(p*n, 0, 1), nrow=n, ncol=p)
+  s <- svd(X)
+  U <- s$u
+  D <- diag(s$d)
+  V <- s$v
+  
+  #Create response
+  y <- matrix(rbinom(n, 1, .5))
+  y[y == 0] <- -1
+  
+  #Create maximal data piling direction
+  B_0 <- V %*% ginv(D) %*% t(U) %*% y
+  
+  #Margin from maximal data piling direction
+  DP_margin <- 2/norm(B_0,"2")
+  
+  #Margin from SVM
+  svmfit <- svm(y ~ ., data = X, kernel = "linear", cost=1, scale = FALSE)
+  
+  beta <- drop(t(svmfit$coefs)%*%X[svmfit$index,])
+  beta0 <- svmfit$rho
+  
+  f_hat <- (X %*% beta - beta0) #same as svmfit$decision.values
+  d_minus <- max(f_hat[f_hat <= 0])
+  d_plus  <- min(f_hat[f_hat >= 0])
+  
+  SVM_margin <- abs(d_minus) + abs(d_plus)
+  
+  #Save output
+  margins[i,1] <- DP_margin
+  margins[i,2] <- SVM_margin
+}
 
-#Create response
-y <- matrix(rbinom(n, 1, .5))
-y[y == 0] <- -1
+margin_difference <- margins[,2] - margins[,1]
 
-#Create maximal data piling direction
-B_0 <- V %*% ginv(D) %*% t(U) %*% y
-
-#Maximal data piling direction
-DP_margin <- 
-
+plot(1:reps, margin_difference)
 
 ```
 

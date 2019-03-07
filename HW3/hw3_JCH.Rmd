@@ -45,35 +45,43 @@ You have a set of $p$ variables in the matrix $X$ which represent some economic 
 (b) Read in the data in `vcdata.csv`. There is a two-column $x$ and a time variable $t$. Fit the varying coefficient model, and plot the three coefficient (functions) versus time (on the same plot using matplot).
 
 ```{r}
+#Setup, read data
 rm(list = ls())
 data <- read.csv("vcdata.csv")
+
+#User parameters
 df <- 5
 
-t_splines <- ns(data$t, df = df)
-int <- rep(1, nrow(data))
-model <- lm(data$y ~ t_splines:(int + data$x.1 + data$x.2))
+#Design data
+column_names <- c('intcp', 'x1', 'x2')
+p <- length(column_names)
+n <- nrow(data)
 
-bint_t <- t_splines[,] %*% model$coefficients[-1][0*df+1:df] + model$coefficients['(Intercept)']
-b1_t <-   t_splines[,] %*% model$coefficients[-1][1*df+1:df]
-b2_t <-   t_splines[,] %*% model$coefficients[-1][2*df+1:df]
+t_splines <- ns(data$t, df = df, intercept = TRUE)
+intcp <- rep(1, nrow(data))
+X <- data.frame(matrix(c(intcp, data$x.1, data$x.2), nrow=n, ncol=p))
+colnames(X) <- column_names
 
+#Fit model, aggregate parameters, make predictions
+model <- lm(data$y ~ t_splines:(intcp + x1 + x2) - 1, data=X)
+bint_t <- t_splines[,] %*% model$coefficients[0*df+1:df]
+b1_t <-   t_splines[,] %*% model$coefficients[1*df+1:df]
+b2_t <-   t_splines[,] %*% model$coefficients[2*df+1:df]
 y_hat <- bint_t + (b1_t * data$x.1) + (b2_t * data$x.2)
-#y_hat - model$fitted.values
-RSS <- (1/nrow(data)) * sum((data$y - y_hat)^2)
-summary(model)
 
-coeff_t <- matrix(c(bint_t, b1_t, b2_t), nrow=nrow(data),ncol=(3))
-       
+#Plot aggregate parameters as function of t
+coeff_t <- matrix(c(bint_t, b1_t, b2_t), nrow=nrow(data),ncol=p)
 matplot(
   data$t, coeff_t,
   type = "l",
   lty = c('solid','solid','solid'),
+  lwd = c(2,2,2),
   col = c('black', 'red', 'green')
 )
 legend(
   'right', 
   legend = c('B_0','B_x1','B_x2'), 
-  col = c('black', 'red', 'green'), 
+  col = c('black', 'red', 'green'),
   fill = c('black', 'red', 'green')
 )
 ```
@@ -81,24 +89,30 @@ legend(
 (c) Compute the pointwise standard errors for each of these, and in- clude a standard-error band (upper and lower) for each function.
 
 ```{r}
-std_errs <- summary(model)$coefficients[,2]
-bint_se <- sum(std_errs[(0*df+1):(df+1)])
-b1_se <-   sum(std_errs[1*df+2:(df+1)])
-b2_se <-   sum(std_errs[2*df+2:(df+1)])
+#Create confidence intervals for each 
+bands <- c()
+for(i in 1:ncol(X)){
+  #Make synthetic data, all 1s for the coefficient we want to calculate
+  synth_X <- matrix(0,nrow=nrow(data),ncol=p)
+  synth_X[,i] <- 1
+  colnames(synth_X) <- column_names
+  
+  #Make "predictions" of B_i, with confidence bands
+  bands_i <- predict(model, data.frame(synth_X), interval = 'confidence')
+  bands <- cbind(bands,bands_i)
+}
 
-coeff_se_t <- matrix(c(
-  bint_t, bint_t + bint_se, bint_t - bint_se,
-  b1_t,   b1_t + b1_se,     b1_t - b1_se,
-  b2_t,   b2_t + b2_se,     b2_t - b2_se), 
-  nrow=nrow(data),ncol=(9)
-)
+#Plot confidence bands of each coefficient
 matplot(
-  data$t, coeff_se_t,
+  data$t, bands,
   type = "l",
   lty = c('solid','dashed','dashed','solid','dashed','dashed','solid','dashed','dashed'),
+  lwd = c(2,1,1,2,1,1,2,1,1),
   col = c('black','black','black','red','red','red','green','green','green')
 )
 ```
+
+think of this as standard errors of y_hat, because its like a regression.
 
 (d) Is this an interaction model? If so, what order.
 

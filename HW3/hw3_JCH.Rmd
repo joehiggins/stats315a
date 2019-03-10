@@ -113,7 +113,6 @@ p <- length(column_names)
 n <- nrow(data)
 
 t_splines <- ns(data$t, df = df, intercept = TRUE)
-matplot(data$t, t_splines[,])
 intcp <- rep(1, nrow(data))
 X <- data.frame(matrix(c(intcp, data$x.1, data$x.2), nrow=n, ncol=p))
 colnames(X) <- column_names

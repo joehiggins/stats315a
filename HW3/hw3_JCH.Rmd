@@ -46,9 +46,9 @@ Ex. 18.9 Compare the data piling direction of Exercise 18.8 to the direction of 
 rm(list = ls())
 
 #Parameters
-p <- 12
-n <- 10
-reps <- 100
+p <- 25
+n <- 20
+reps <- 1000
 
 margins <- matrix(,nrow=reps,ncol=2)
 for(i in 1:reps){
@@ -70,16 +70,13 @@ for(i in 1:reps){
   DP_margin <- 2/norm(B_0,"2")
   
   #Margin from SVM
-  svmfit <- svm(y ~ ., data = X, kernel = "linear", cost=1, scale = FALSE)
+  svmfit <- svm(y ~ ., data = X, kernel = "linear", cost=1000, scale = FALSE, type='C-classification')
   
   beta <- drop(t(svmfit$coefs)%*%X[svmfit$index,])
   beta0 <- svmfit$rho
-  
   f_hat <- (X %*% beta - beta0) #same as svmfit$decision.values
-  d_minus <- max(f_hat[f_hat <= 0])
-  d_plus  <- min(f_hat[f_hat >= 0])
-  
-  SVM_margin <- abs(d_minus) + abs(d_plus)
+
+  SVM_margin <- 2/norm(beta,"2")
   
   #Save output
   margins[i,1] <- DP_margin
@@ -87,7 +84,9 @@ for(i in 1:reps){
 }
 
 margin_difference <- margins[,2] - margins[,1]
-
+cat("Number of times DP margin larger than SVM margin: ",
+    length(margin_difference[margin_difference < 0])
+)
 plot(1:reps, margin_difference)
 
 ```
@@ -114,6 +113,7 @@ p <- length(column_names)
 n <- nrow(data)
 
 t_splines <- ns(data$t, df = df, intercept = TRUE)
+matplot(data$t, t_splines[,])
 intcp <- rep(1, nrow(data))
 X <- data.frame(matrix(c(intcp, data$x.1, data$x.2), nrow=n, ncol=p))
 colnames(X) <- column_names
@@ -174,75 +174,3 @@ think of this as standard errors of y_hat, because its like a regression.
 
 Yes this is an interaction model. It is a second-order interaction model, since the covariates of the model are based on two vectors multiplied element-wise on each other.
 
-
-## Question 6
-
-A company in Chile uses crowd-sourcing to fund loans to the public, as a means to offer relief from the high bank interest rates. The data in this challenge consists of historical loan records for a case-control sam- ple of 3000 past customers. The variables characterize some aspects of the loan, such as duration, amount, interest rate and many other more technical features of the loans. There are also some qualitative variables such as reason for the loan, a quality score and so on. One of the variables — our response — is ”default”, a 0/1 variable indicating whether or not the borrower has defaulted on their loan payments.
-
-The company would like to build a default risk score so that they can target high-risk customers early and perhaps preempt the default event, which ends up costly for all involved.
-
-The default rate experienced by this company is 7%. You are provided with a training set `loan_train.csv` which represents a sample of 1000 defaulters, and 2000 non-defaulters, and contains 30 features and the binary outcome ”default” (in the first column). There is also a file `loan_testx.csv` which consists of a random sample of 10000 other customers from the general pool. For these you are provided only the 30 features.
-
-Your job is to build a risk score — probability of default — for each customer in the test set. You may use any of the tools discussed in the lectures in this class. You may not use tools not discussed in this class, such as deep learning, random forests or boosting. You should produce a writeup describing what you did, and how you selected your final model. Give some indication which variables were important in the calculation of your risk score. You will also submit a simple file with 10000 lines, and on each line is your predicted risk estimate for each test customer, in the same order as in `loan_testx.csv.`
-
-
-```{r}
-rm(list = ls())
-get_accuracy <- function(y_hat, y){
-  correct <- y_hat == y
-  pct_correct <- sum(correct)/length(correct)
-  return(pct_correct)
-}
-
-data_to_matrix <- function(data_frame){
-  output <- matrix(, nrow=dim(data_frame)[1], ncol=dim(data_frame)[2])
-  for(i in 1:ncol(data_frame)){
-    output[,i] <- data_frame[,i]
-  }
-  return(output)
-}
-
-probs_to_classes <- function(probs, p){
-  probs[probs > p] <- 1
-  probs[probs <= p] <- 0
-  return(probs)
-}
-
-#import data
-train <- read.csv("loan_train.csv")
-
-#create folds
-num_folds = 10
-flds <- createFolds(train$default, k = num_folds, list = TRUE, returnTrain = FALSE)
-
-#cross validation split
-train_valid_split <- function(k, flds){
-  tv <- list()
-  tv[[1]] <- unlist(flds[-k], use.names = FALSE)
-  tv[[2]] <- flds[[k]]
-  names(tv) <- c("train", "valid")
-  return(tv)
-}
-
-#run model through cross validation
-for(i in 1:num_folds){
-  tv_split <- train_valid_split(i, flds)
-  train_x <- train[tv_split$train, 2:dim(train)[2]]
-  train_y <- train[tv_split$train, 1]
-  valid_x <- train[tv_split$valid, 2:dim(train)[2]]
-  valid_y <- train[tv_split$valid, 1]
-  
-  #model <- glmnet(data_to_matrix(train_x), train_y, family=c("binomial"), alpha = 0.3)
-  model <- glm(train_y ~ credit_ratio + interest + amount + term, train_x, family=binomial())
-  model_output <- unname(predict(model, valid_data, type="response"))
-  y_hat <- probs_to_classes(model_output, 0.50)
-  accuracy <- get_accuracy(y_hat, valid_data$default)
-  accuracy
-}
-
-
-
-
-
-
-```

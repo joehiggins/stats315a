@@ -97,11 +97,14 @@ plot(1:reps, margin_difference)
 Demonstrate empirically that as $\lambda \downarrow 0$, $|\langle \theta_{\lambda}, \beta_{svm} \rangle| \rightarrow 1$. What is your conclusion?
 
 ```{r}
+#make it separable, but make them close! otherwise wont see convergence
 rm(list = ls())
-n <- 200
-p <- 10
-data_0 <- cbind(rep(0, n/2), matrix(rep(0, n/2*p) + runif(n/2*p, 0, 1),nrow=n/2,ncol=p))
-data_1 <- cbind(rep(1, n/2), matrix(rep(3, n/2*p) + runif(n/2*p, 0, 1),nrow=n/2,ncol=p))
+n <- 10
+p <- 2
+d <- 1
+data_0 <- cbind(rep(0, n/2), rep(0, n/2) + runif(n/2, 0, d), rep(0, n/2) + runif(n/2, 0, d))
+data_1 <- cbind(rep(1, n/2), rep(0, n/2) + runif(n/2, 0, d), rep(d, n/2) + runif(n/2, 0, d))
+
 data <- rbind(data_0, data_1)
 y <- factor(data[,1])
 X <- data[,c(2:(p+1))]
@@ -123,10 +126,10 @@ n_lambdas <- 50
 lambdas <- rep(10,n_lambdas) ^ (seq(n_lambdas:1) - rep(n_lambdas/2, n_lambdas))
 lr_model <- glmnet(X, y, family=c("binomial"), alpha = 0, standardize = FALSE, lambda = lambdas)
 
-lr_model$lambda
-
 theta_l <- apply(lr_model$beta, 2, function(x) x / norm(x,"2"))
 output <- apply(theta_l, 2, function(x) x %*% beta_svm)
+plot(1:length(theta_l[1,]), output)
+#plot(X[,1],X[,2])
 ```
 
 ## Question 5

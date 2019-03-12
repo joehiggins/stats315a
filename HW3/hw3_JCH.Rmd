@@ -91,6 +91,44 @@ plot(1:reps, margin_difference)
 
 ```
 
+## Question 3
+
+(e) Set up a small simulation with separable data (you don’t need to have $p > n$ for this part). Fit the SVM optimal separating hyperplane (for example, use function `svm()` in package `e1071` with a large value for the cost parameter), and extract the unit vector $\beta_{svm}$ normal to the separating hyperplane. Now fit a series of ridged logistic regression models with $\lambda$ decreasing toward 0 (use a fine grid on the log scale). (The package `glmnet` might be useful here, with `alpha=0`, `standardize=FALSE`, and perhaps providing your own sequence of values for lambda). For each of your solutions, compute $\theta_{\lambda} = \frac{ \hat{\beta}_{\lambda} }{ || \hat{\beta}_{\lambda}  || }$
+Demonstrate empirically that as $\lambda \downarrow 0$, $|\langle \theta_{\lambda}, \beta_{svm} \rangle| \rightarrow 1$. What is your conclusion?
+
+```{r}
+rm(list = ls())
+n <- 200
+p <- 10
+data_0 <- cbind(rep(0, n/2), matrix(rep(0, n/2*p) + runif(n/2*p, 0, 1),nrow=n/2,ncol=p))
+data_1 <- cbind(rep(1, n/2), matrix(rep(3, n/2*p) + runif(n/2*p, 0, 1),nrow=n/2,ncol=p))
+data <- rbind(data_0, data_1)
+y <- factor(data[,1])
+X <- data[,c(2:(p+1))]
+X <- matrix(X,nrow=n,ncol=p)
+
+svm_model <- svm(
+  y ~ ., 
+  data = X, 
+  cost=99999,
+  type='C-classification',
+  kernel = 'linear', 
+  scale = FALSE
+)
+
+beta_svm <- drop(t(svm_model$coefs)%*%X[svm_model$index,])
+beta_svm <- beta_svm/norm(beta_svm,"2")
+
+n_lambdas <- 50
+lambdas <- rep(10,n_lambdas) ^ (seq(n_lambdas:1) - rep(n_lambdas/2, n_lambdas))
+lr_model <- glmnet(X, y, family=c("binomial"), alpha = 0, standardize = FALSE, lambda = lambdas)
+
+lr_model$lambda
+
+theta_l <- apply(lr_model$beta, 2, function(x) x / norm(x,"2"))
+output <- apply(theta_l, 2, function(x) x %*% beta_svm)
+```
+
 ## Question 5
 
 You have a set of $p$ variables in the matrix $X$ which represent some economic indicators measured over a number of years, and a response $y$ also measured for the same years. You fit a linear model, but are criticized because you are told that the regime changes in time, and so should your model. You decide to let your regression coefficients (and intercept) change smoothly with time, a so-called varying coefficient model.
@@ -166,8 +204,6 @@ matplot(
   col = c('black','black','black','red','red','red','green','green','green')
 )
 ```
-
-think of this as standard errors of y_hat, because its like a regression.
 
 (d) Is this an interaction model? If so, what order.
 
